@@ -218,14 +218,21 @@
 }
 
 - (void)socket:(GCDAsyncSocket *)sock didWriteDataWithTag:(long)tag {
-    NSLog(@"didWriteData:%ld",tag);
+//    NSLog(@"didWriteData:%ld",tag);
     [sock readDataWithTimeout:TimeoutOfRead tag:self.receivedTag];
 }
 
 - (void)socket:(GCDAsyncSocket *)sock didReadData:(NSData *)data withTag:(long)tag {
     [sock readDataWithTimeout:TimeoutOfRead tag:self.receivedTag];
     dispatch_async(dispatch_get_main_queue(), ^{
-        [[NSNotificationCenter defaultCenter]postNotificationName:ITGCDSocketManagerNoticeDidReceiveData(sock.localPort) object:[ITGCDSocketManagerClientInfo configWithClient:sock.localPort receivedData:data] userInfo:nil];
+        uint16_t noticePort;
+        if ([[self.serverSocketsDict allValues] containsObject:sock]) {
+            noticePort = sock.connectedPort;
+            
+        } else if ([[self.clientSocketsDict allValues] containsObject:sock]) {
+            noticePort = sock.localPort;
+        }
+        [[NSNotificationCenter defaultCenter]postNotificationName:ITGCDSocketManagerNoticeDidReceiveData(noticePort) object:[ITGCDSocketManagerClientInfo configWithClient:noticePort receivedData:data] userInfo:nil];
     });
 }
 
